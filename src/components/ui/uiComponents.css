@@ -1,0 +1,152 @@
+/* Global UI Components Styles */
+
+/* Loading States */
+.loading-container {
+  position: relative;
+  min-height: 200px;
+}
+
+.loading-skeleton {
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-color: rgba(196, 196, 196, 0.1);
+  }
+  50% {
+    background-color: rgba(196, 196, 196, 0.3);
+  }
+  100% {
+    background-color: rgba(196, 196, 196, 0.1);
+  }
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.toast {
+  background: white;
+  border-radius: 8px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-success {
+  border-left: 4px solid #4CAF50;
+}
+
+.toast-error {
+  border-left: 4px solid #F44336;
+}
+
+.toast-warning {
+  border-left: 4px solid #FFC107;
+}
+
+/* Accessible Buttons */
+.accessible-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.accessible-btn:hover {
+  opacity: 0.9;
+}
+
+.accessible-btn:focus {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: #4CAF50;
+  outline: none;
+}
+
+/* Error States */
+.error-message {
+  color: #F44336;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Success States */
+.success-message {
+  color: #4CAF50;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Sticky Header */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  background: white;
+  padding: 12px 20px;
+  border-bottom: 1px solid #eee;
+  z-index: 100;
+}
+
+/* Responsive Grid */
+.grid-container {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+@media (min-width: 768px) {
+  .grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+/* Keyboard Navigation */
+.focus-visible {
+  outline: 2px solid #4CAF50;
+  outline-offset: 2px;
+}
+
+/* Image Optimization */
+.optimized-image {
+  max-width: 100%;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.optimized-image:hover {
+  transform: scale(1.05);
+}

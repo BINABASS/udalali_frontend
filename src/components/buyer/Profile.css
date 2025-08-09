@@ -1,0 +1,125 @@
+.glassy-buyer-section {
+  padding: 40px 50px;
+  background: var(--glass-bg, rgba(255,255,255,0.7));
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgba(67,97,238,0.10);
+  backdrop-filter: blur(16px);
+  min-height: 80vh;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 40px;
+}
+
+.profile-avatar-glassy {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--glass-bg, rgba(67,97,238,0.10));
+  box-shadow: 0 2px 12px rgba(67,97,238,0.13);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.profile-avatar-icon {
+  color: #4361ee;
+  font-size: 5rem;
+}
+
+.profile-info h2 {
+  color: #2c3e50;
+  margin: 0 0 5px 0;
+  font-size: 2rem;
+  font-weight: 800;
+}
+.profile-info p {
+  color: #666;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.profile-sections.glassty-card, .glassy-card {
+  background: var(--glass-bg, rgba(255,255,255,0.8));
+  padding: 32px 28px;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(67,97,238,0.08);
+  margin-bottom: 32px;
+}
+.section {
+  margin-bottom: 30px;
+}
+.section h3 {
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 1px 4px rgba(67,97,238,0.04);
+}
+.form-group select {
+  padding: 11px;
+}
+.glassty-save-btn, .glassy-save-btn {
+  background: #4361ee;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(67,97,238,0.13);
+  transition: background 0.2s, transform 0.2s;
+  margin-top: 32px;
+}
+.glassty-save-btn:hover, .glassy-save-btn:hover {
+  background: #2743b8;
+  transform: scale(1.04);
+}
+
+@media (max-width: 768px) {
+  .glassy-buyer-section {
+    padding: 18px 6px;
+    border-radius: 12px;
+  }
+  .profile-header {
+    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .profile-avatar-glassy {
+    width: 70px;
+    height: 70px;
+  }
+  .profile-avatar-icon {
+    font-size: 2.8rem;
+  }
+  .profile-info h2 {
+    font-size: 1.2rem;
+  }
+  .profile-sections.glassty-card, .glassy-card {
+    padding: 14px 8px;
+    border-radius: 10px;
+  }
+}

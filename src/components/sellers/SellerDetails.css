@@ -1,0 +1,109 @@
+.seller-details {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.seller-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.seller-header h2 {
+  color: #1a56db;
+  margin: 0;
+}
+
+.seller-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.edit-btn, .status-btn {
+  background: #1a56db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-btn:hover, .status-btn:hover {
+  background: #1543a8;
+}
+
+.seller-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.info-section {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.info-section h3 {
+  color: #334155;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.value {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.description {
+  color: #334155;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.seller-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-card h3 {
+  color: #64748b;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+}
+
+.stat-number {
+  color: #1a56db;
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+}
