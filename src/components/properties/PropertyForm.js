@@ -1,35 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { propertyService } from '../../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faDollarSign, faMapMarkerAlt, faImage, faTimes } from '@fortawesome/free-solid-svg-icons';
-import './PropertyForm.css';
-import { propertyTypes as sharedPropertyTypes } from '../../data/properties';
+import { 
+  faHome, 
+  faDollarSign, 
+  faMapMarkerAlt, 
+  faImage, 
+  faTimes,
+  faBed,
+  faBath,
+  faRulerCombined
+} from '@fortawesome/free-solid-svg-icons';
 import { toast } from '../ui/Toaster';
-import { users } from '../../data/users';
+import './PropertyForm.css';
 
-const propertyTypes = sharedPropertyTypes.includes('commercial') ? sharedPropertyTypes : [...sharedPropertyTypes, 'commercial'];
-const propertyStatuses = ['available', 'booked', 'maintenance', 'sold'];
+// Property types that match the backend's choices
+const PROPERTY_TYPES = [
+  'HOUSE',
+  'APARTMENT',
+  'CONDO',
+  'LAND',
+  'COMMERCIAL'
+];
+
+const PROPERTY_STATUSES = [
+  { value: 'available', label: 'Available' },
+  { value: 'booked', label: 'Booked' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'sold', label: 'Sold' }
+];
 
 const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) => {
-  const [formData, setFormData] = useState(property || {
+  const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
     location: '',
     property_type: 'HOUSE',
-    is_available: true,
+    status: 'available',
+    bedrooms: '',
+    bathrooms: '',
+    area: '',
+    amenities: [],
     image: null,
     previewImage: null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
   const [errors, setErrors] = useState({});
-  const [imageError, setImageError] = useState('');
   const [submitError, setSubmitError] = useState('');
 
-  // For admin: get all sellers
-  const sellerOptions = isAdmin ? Object.values(users).filter(u => u.role === 'seller') : [];
+  // Initialize form with property data if editing
+  useEffect(() => {
+    if (property) {
+      setFormData(prev => ({
+        ...prev,
+        ...property,
+        status: property.is_available ? 'available' : 'booked',
+        previewImage: property.images?.[0]?.image || null
+      }));
+    }
+  }, [property]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -38,29 +69,41 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
     if (!formData.price || isNaN(formData.price)) newErrors.price = 'Valid price is required';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
     if (!formData.property_type) newErrors.property_type = 'Property type is required';
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: value 
+    }));
     setSubmitError('');
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      setImageError('Only JPEG, PNG, or WebP images are allowed');
+      setErrors(prev => ({ ...prev, image: 'Only JPEG, PNG, or WebP images are allowed' }));
       return;
     }
+
+    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      setImageError('Image size must be less than 5MB');
+      setErrors(prev => ({ ...prev, image: 'Image size must be less than 5MB' }));
       return;
     }
-    setImageError('');
+
+    // Clear any previous errors
+    setErrors(prev => ({ ...prev, image: '' }));
+
+    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData(prev => ({
@@ -73,7 +116,11 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
   };
 
   const handleRemoveImage = () => {
-    setFormData(prev => ({ ...prev, image: null, previewImage: null }));
+    setFormData(prev => ({ 
+      ...prev, 
+      image: null, 
+      previewImage: null 
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -81,34 +128,62 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
     setSubmitError('');
     if (!validateForm()) return;
     setIsSubmitting(true);
-    console.log('Submitting property', formData); // <--- Add this line
+    
     try {
+      // Format the data to match backend expectations
       const propertyData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
         location: formData.location.trim(),
-        property_type: formData.property_type,
-        is_available: formData.is_available,
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
+        property_type: formData.property_type, // Already uppercase from the select
+        is_available: formData.status === 'available',
+        bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
+        bathrooms: formData.bathrooms ? parseFloat(formData.bathrooms) : null,
+        area: formData.area ? parseFloat(formData.area) : null,
+        amenities: formData.amenities || [],
       };
-      const createdProperty = await propertyService.createProperty(propertyData);
-      if (formData.image) {
-        const imageFormData = new FormData();
-        imageFormData.append('image', formData.image);
-        await propertyService.uploadPropertyImage(createdProperty.id, imageFormData);
+
+      console.log('Sending property data:', propertyData);
+      
+      let result;
+      if (property) {
+        // Update existing property
+        result = await propertyService.updateProperty(property.id, propertyData);
+      } else {
+        // Create new property
+        result = await propertyService.createProperty(propertyData);
       }
+
+      // Handle image upload if there's a new image
+      if (formData.image) {
+        try {
+          const formDataImg = new FormData();
+          formDataImg.append('image', formData.image);
+          formDataImg.append('is_primary', 'true');
+          await propertyService.uploadPropertyImage(result.id, formDataImg);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          // Continue even if image upload fails
+        }
+      }
+
+      // Call the parent's onSubmit with the complete property data
       await onSubmit({
-        ...createdProperty,
-        image: formData.previewImage
+        ...result,
+        image: formData.previewImage || property?.images?.[0]?.image
       });
-      setSuccessMessage('Property saved successfully!');
-      toast.success('Property saved successfully!');
-      setTimeout(() => onClose(), 2000);
+
+      toast.success(property ? 'Property updated successfully!' : 'Property created successfully!');
+      setTimeout(() => onClose(), 1500);
     } catch (error) {
-      setSubmitError(error.response?.data?.message || 'Failed to save property. Please try again.');
-      toast.error(error.response?.data?.message || 'Failed to save property. Please try again.');
+      console.error('Error saving property:', error);
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          JSON.stringify(error.response?.data) ||
+                          'Failed to save property. Please try again.';
+      setSubmitError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -120,10 +195,16 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
         <form onSubmit={handleSubmit} className="property-form-pro">
           <div className="form-header-pro">
             <h2>{property ? 'Edit Property' : 'Add New Property'}</h2>
-            <button type="button" className="close-btn-pro" onClick={onClose}>
+            <button 
+              type="button" 
+              className="close-btn-pro" 
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               <FontAwesomeIcon icon={faTimes} />
             </button>
           </div>
+          
           <div className="form-body-pro">
             {isSubmitting && (
               <div className="loading-overlay-pro">
@@ -131,113 +212,215 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
                 <p>Saving property...</p>
               </div>
             )}
+            
             {submitError && (
               <div className="error-message-pro">
                 <p>{submitError}</p>
               </div>
             )}
-            {successMessage && (
-              <div className="success-message-pro">
-                <p>{successMessage}</p>
-              </div>
-            )}
-            {/* Admin: Seller select dropdown */}
-            {isAdmin && (
-              <div className="form-row-pro">
-                <div className="form-group-pro">
-                  <label>Assign Seller *</label>
-                  <select
-                    name="sellerId"
-                    value={formData.sellerId || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, sellerId: parseInt(e.target.value) }))}
-                    required
-                  >
-                    <option value="">Select Seller</option>
-                    {sellerOptions.map(seller => (
-                      <option key={seller.id} value={seller.id}>{seller.name} ({seller.email})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
+
             <div className="form-row-pro">
               <div className="form-group-pro">
                 <label>Title *</label>
                 <div className="input-icon-pro">
                   <FontAwesomeIcon icon={faHome} />
-                  <input type="text" name="title" value={formData.title} onChange={handleChange} required />
+                  <input 
+                    type="text" 
+                    name="title" 
+                    value={formData.title} 
+                    onChange={handleChange} 
+                    placeholder="Modern Apartment in Downtown" 
+                    required 
+                  />
                 </div>
                 {errors.title && <span className="error-text-pro">{errors.title}</span>}
               </div>
-              <div className="form-group-pro">
-                <label>Description *</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} required rows={3} />
-                {errors.description && <span className="error-text-pro">{errors.description}</span>}
-              </div>
+              
               <div className="form-group-pro">
                 <label>Price ($) *</label>
                 <div className="input-icon-pro">
                   <FontAwesomeIcon icon={faDollarSign} />
-                  <input type="number" name="price" value={formData.price} onChange={handleChange} min="0" step="0.01" required />
+                  <input 
+                    type="number" 
+                    name="price" 
+                    value={formData.price} 
+                    onChange={handleChange} 
+                    min="0" 
+                    step="0.01" 
+                    placeholder="250000" 
+                    required 
+                  />
                 </div>
                 {errors.price && <span className="error-text-pro">{errors.price}</span>}
               </div>
             </div>
+
             <div className="form-row-pro">
               <div className="form-group-pro">
                 <label>Location *</label>
                 <div className="input-icon-pro">
                   <FontAwesomeIcon icon={faMapMarkerAlt} />
-                  <input type="text" name="location" value={formData.location} onChange={handleChange} required />
+                  <input 
+                    type="text" 
+                    name="location" 
+                    value={formData.location} 
+                    onChange={handleChange} 
+                    placeholder="123 Main St, City, Country" 
+                    required 
+                  />
                 </div>
                 {errors.location && <span className="error-text-pro">{errors.location}</span>}
               </div>
+              
               <div className="form-group-pro">
                 <label>Property Type *</label>
-                <select name="property_type" value={formData.property_type} onChange={handleChange} required>
-                  <option value="">Select Type</option>
-                  {propertyTypes.map(type => (
-                    <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                <select 
+                  name="property_type" 
+                  value={formData.property_type} 
+                  onChange={handleChange} 
+                  required
+                  className="select-input"
+                >
+                  {PROPERTY_TYPES.map(type => (
+                    <option key={type} value={type}>
+                      {type.charAt(0) + type.slice(1).toLowerCase()}
+                    </option>
                   ))}
                 </select>
                 {errors.property_type && <span className="error-text-pro">{errors.property_type}</span>}
               </div>
-              <div className="form-group-pro">
-                <label>Status *</label>
-                <select name="status" value={formData.status} onChange={handleChange} required>
-                  {propertyStatuses.map(status => (
-                    <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
-                  ))}
-                </select>
-                {errors.status && <span className="error-text-pro">{errors.status}</span>}
-              </div>
             </div>
+
             <div className="form-row-pro">
               <div className="form-group-pro">
-                <label>Property Image *</label>
+                <label>Bedrooms</label>
+                <div className="input-icon-pro">
+                  <FontAwesomeIcon icon={faBed} />
+                  <input 
+                    type="number" 
+                    name="bedrooms" 
+                    value={formData.bedrooms} 
+                    onChange={handleChange} 
+                    min="0" 
+                    placeholder="3" 
+                  />
+                </div>
+              </div>
+              
+              <div className="form-group-pro">
+                <label>Bathrooms</label>
+                <div className="input-icon-pro">
+                  <FontAwesomeIcon icon={faBath} />
+                  <input 
+                    type="number" 
+                    name="bathrooms" 
+                    value={formData.bathrooms} 
+                    onChange={handleChange} 
+                    min="0" 
+                    step="0.5" 
+                    placeholder="2.5" 
+                  />
+                </div>
+              </div>
+              
+              <div className="form-group-pro">
+                <label>Area (sq ft)</label>
+                <div className="input-icon-pro">
+                  <FontAwesomeIcon icon={faRulerCombined} />
+                  <input 
+                    type="number" 
+                    name="area" 
+                    value={formData.area} 
+                    onChange={handleChange} 
+                    min="0" 
+                    placeholder="1500" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-group-pro">
+              <label>Description *</label>
+              <textarea 
+                name="description" 
+                value={formData.description} 
+                onChange={handleChange} 
+                placeholder="Describe the property in detail..." 
+                rows="4" 
+                required 
+              />
+              {errors.description && <span className="error-text-pro">{errors.description}</span>}
+            </div>
+
+            <div className="form-row-pro">
+              <div className="form-group-pro">
+                <label>Status *</label>
+                <select 
+                  name="status" 
+                  value={formData.status} 
+                  onChange={handleChange} 
+                  required
+                  className="select-input"
+                >
+                  {PROPERTY_STATUSES.map(status => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group-pro">
+                <label>Property Image {!property && '*'}</label>
                 <div className="image-upload-container-pro">
-                  {!formData.previewImage ? (
-                    <label className="upload-placeholder-pro">
-                      <FontAwesomeIcon icon={faImage} size="2x" />
-                      <span>Click to upload</span>
-                      <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
-                    </label>
-                  ) : (
+                  {formData.previewImage ? (
                     <div className="image-preview-pro">
-                      <img src={formData.previewImage} alt="Preview" />
-                      <button type="button" className="remove-image-btn-pro" onClick={handleRemoveImage}>
+                      <img src={formData.previewImage} alt="Property preview" />
+                      <button 
+                        type="button" 
+                        className="remove-image-btn-pro" 
+                        onClick={handleRemoveImage}
+                        disabled={isSubmitting}
+                      >
                         <FontAwesomeIcon icon={faTimes} />
                       </button>
                     </div>
+                  ) : (
+                    <label className="upload-placeholder-pro">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageChange} 
+                        style={{ display: 'none' }} 
+                        required={!property}
+                        disabled={isSubmitting}
+                      />
+                      <FontAwesomeIcon icon={faImage} size="2x" />
+                      <span>Click to upload image</span>
+                      <small>Max 5MB (JPEG, PNG, WebP)</small>
+                    </label>
                   )}
-                  {imageError && <span className="error-text-pro">{imageError}</span>}
                   {errors.image && <span className="error-text-pro">{errors.image}</span>}
                 </div>
               </div>
             </div>
+
             <div className="form-actions-pro">
-              <button type="submit" className="submit-btn-pro" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : property ? 'Save Changes' : 'Add Property'}</button>
-              <button type="button" className="cancel-btn-pro" onClick={onClose} disabled={isSubmitting}>Cancel</button>
+              <button 
+                type="button" 
+                className="cancel-btn-pro" 
+                onClick={onClose} 
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="submit-btn-pro" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Saving...' : (property ? 'Update Property' : 'Add Property')}
+              </button>
             </div>
           </div>
         </form>

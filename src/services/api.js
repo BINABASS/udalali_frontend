@@ -13,7 +13,7 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`; // Changed to Bearer for JWT
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -48,7 +48,6 @@ export const authService = {
     return Promise.resolve();
   },
   getCurrentUser: () => {
-    // In a real app, you would decode the JWT token to get user info
     const user = localStorage.getItem('user');
     return Promise.resolve(user ? JSON.parse(user) : null);
   },
@@ -57,31 +56,37 @@ export const authService = {
 
 // Property service
 export const propertyService = {
+  // Basic CRUD operations
   getAllProperties: () => api.get('/properties/'),
   getProperty: (id) => api.get(`/properties/${id}/`),
-  createProperty: (propertyData) => api.post('/properties/create/', propertyData),
-  updateProperty: (id, propertyData) => api.put(`/properties/${id}/update/`, propertyData),
-  deleteProperty: (id) => api.delete(`/properties/${id}/delete/`),
-  // Property Images (using new /property-images/ endpoints)
-  getPropertyImages: (propertyId) => api.get('/property-images/', { params: { property: propertyId } }),
+  createProperty: (propertyData) => api.post('/properties/', propertyData),
+  updateProperty: (id, propertyData) => api.put(`/properties/${id}/`, propertyData),
+  deleteProperty: (id) => api.delete(`/properties/${id}/`),
+  
+  // Property Images (nested under properties)
+  getPropertyImages: (propertyId) => api.get(`/properties/${propertyId}/images/`),
   uploadPropertyImage: (propertyId, imageFile, caption = '') => {
     const formData = new FormData();
-    formData.append('property', propertyId);
     formData.append('image', imageFile);
     if (caption) formData.append('caption', caption);
-    return api.post('/property-images/', formData, {
+    return api.post(`/properties/${propertyId}/images/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
   },
-  setPrimaryImage: (imageId) => api.post(`/property-images/${imageId}/set_primary/`),
-  deletePropertyImage: (imageId) => api.delete(`/property-images/${imageId}/`)
+  setPrimaryImage: (propertyId, imageId) => 
+    api.post(`/properties/${propertyId}/images/${imageId}/set_primary/`),
+  deletePropertyImage: (propertyId, imageId) => 
+    api.delete(`/properties/${propertyId}/images/${imageId}/`)
 };
 
+// Dashboard service
 export const dashboardService = {
   getDashboardStats: () => api.get('/dashboard/stats'),
   getNotifications: () => api.get('/dashboard/notifications'),
   getRecentActivity: () => api.get('/dashboard/activity'),
   getPropertyDistribution: () => api.get('/dashboard/distribution')
 };
+
+export default api;
