@@ -16,12 +16,24 @@ export const UserProvider = ({ children }) => {
       
       if (savedUser && token) {
         const userData = JSON.parse(savedUser);
-        if (userData && userData.role) {
-          // Normalize role to lowercase for consistency
+        if (userData) {
+          // Map CUSTOMER to buyer for frontend compatibility
+          const roleMap = {
+            'CUSTOMER': 'buyer',
+            'BUYER': 'buyer',
+            'SELLER': 'seller',
+            'ADMIN': 'admin'
+          };
+          
+          const role = userData.user_type 
+            ? (roleMap[userData.user_type.toUpperCase()] || 'buyer')
+            : 'buyer';
+            
           const normalizedUser = {
             ...userData,
-            role: userData.role.toLowerCase()
+            role: role.toLowerCase()
           };
+          
           setUser(normalizedUser);
           setRole(normalizedUser.role);
           // Update localStorage with normalized data
@@ -39,21 +51,48 @@ export const UserProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (userData, token) => {
-    if (!userData || !userData.role) {
-      throw new Error('User data must include a role');
+  const login = (userData) => {
+    if (!userData) {
+      throw new Error('No user data provided');
     }
-    // Normalize role to lowercase for consistency
+    
+    // Ensure user_type is set, default to 'CUSTOMER' if not
+    if (!userData.user_type) {
+      userData.user_type = 'CUSTOMER';
+    }
+    
+    // Map CUSTOMER to buyer for frontend compatibility
+    const roleMap = {
+      'CUSTOMER': 'buyer',
+      'BUYER': 'buyer',
+      'SELLER': 'seller',
+      'ADMIN': 'admin'
+    };
+    
+    const role = roleMap[userData.user_type.toUpperCase()] || 'buyer';
+    
+    // Create normalized user with consistent role
     const normalizedUser = {
       ...userData,
-      role: userData.role.toLowerCase()
+      role: role.toLowerCase()
     };
+    
+    console.log('Setting user context:', normalizedUser);
     setUser(normalizedUser);
     setRole(normalizedUser.role);
-    localStorage.setItem('user', JSON.stringify(normalizedUser));
-    if (token) {
-      localStorage.setItem('token', token);
-    }
+    // Don't store the entire user object, just what we need
+    localStorage.setItem('user', JSON.stringify({
+      id: normalizedUser.id,
+      username: normalizedUser.username,
+      email: normalizedUser.email,
+      user_type: normalizedUser.user_type,
+      role: normalizedUser.role,
+      first_name: normalizedUser.first_name,
+      last_name: normalizedUser.last_name
+    }));
+    
+    // The token is already stored in localStorage by the login component
+    // before this function is called
   };
 
   const logout = async () => {

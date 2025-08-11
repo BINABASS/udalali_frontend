@@ -47,9 +47,19 @@ export const authService = {
     localStorage.removeItem('user');
     return Promise.resolve();
   },
-  getCurrentUser: () => {
-    const user = localStorage.getItem('user');
-    return Promise.resolve(user ? JSON.parse(user) : null);
+  getCurrentUser: async () => {
+    try {
+      const response = await api.get('/users/me/');
+      const userData = response.data;
+      // Store the user data in localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      return userData;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      // If there's an error, try to get from localStorage as fallback
+      const user = localStorage.getItem('user');
+      return user ? JSON.parse(user) : null;
+    }
   },
   register: (userData) => api.post('/users/register/', userData),
 };

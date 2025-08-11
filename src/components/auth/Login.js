@@ -20,61 +20,47 @@ const Login = () => {
       setError('Please fill in all fields');
       return;
     }
-    setLoading(true);
     setError('');
+    setLoading(true);
     try {
-      // 1. Get JWT token
+      // 1. Call the login API
       const response = await authService.login(formData.username, formData.password);
       const { access: token, refresh } = response.data;
       
-      // 2. Store the tokens
+      // 2. Store the tokens first
       localStorage.setItem('token', token);
       localStorage.setItem('refreshToken', refresh);
       
-      // 3. Get user data based on username (temporary solution)
-      let userData;
-      switch(formData.username) {
-        case 'testadmin':
-          userData = {
-            id: 1,
-            username: 'testadmin',
-            email: 'admin@example.com',
-            user_type: 'ADMIN',
-            role: 'admin'
-          };
-          break;
-        case 'testseller':
-          userData = {
-            id: 2,
-            username: 'testseller',
-            email: 'seller@example.com',
-            user_type: 'SELLER',
-            role: 'seller'
-          };
-          break;
-        default:
-          // Default to buyer
-          userData = {
-            id: 3,
-            username: formData.username,
-            email: `${formData.username}@example.com`,
-            user_type: 'BUYER',
-            role: 'buyer'
-          };
+      // 3. Fetch user data from the backend with the new token
+      const userData = await authService.getCurrentUser();
+      
+      if (!userData) {
+        throw new Error('Failed to fetch user data');
       }
       
-      // 4. Store user data in localStorage
+      // 4. Ensure user_type is in the expected format
+      if (!userData.user_type) {
+        console.warn('User type not found in response, defaulting to CUSTOMER');
+        userData.user_type = 'CUSTOMER';
+      }
+      
+      // 5. Add role field for compatibility with UserContext
+      userData.role = userData.user_type.toLowerCase();
+      
+      // 6. Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       
-      // 5. Update user context
+      // 7. Update user context
       login(userData);
       
-      // 6. Redirect based on role
+      // 8. Redirect based on user type
+      const userType = userData.user_type.toUpperCase();
       const redirectPath = {
-        'admin': '/dashboard',
-        'seller': '/seller',
-        'buyer': '/buyer'
-      }[userData.role] || '/';
+        'ADMIN': '/dashboard',
+        'SELLER': '/seller',
+        'BUYER': '/buyer',
+        'CUSTOMER': '/buyer'  // Map CUSTOMER to /buyer route
+      }[userType] || '/';
       
       navigate(redirectPath);
     } catch (error) {
