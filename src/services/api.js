@@ -93,10 +93,34 @@ export const propertyService = {
 
 // Dashboard service
 export const dashboardService = {
-  getDashboardStats: () => api.get('/dashboard/stats'),
-  getNotifications: () => api.get('/dashboard/notifications'),
-  getRecentActivity: () => api.get('/dashboard/activity'),
-  getPropertyDistribution: () => api.get('/dashboard/distribution')
+  getDashboardStats: () => api.get('/dashboard/stats/'),
+  getNotifications: () => api.get('/dashboard/notifications/'),
+  getRecentActivity: () => api.get('/dashboard/activity/'),
+  getPropertyDistribution: () => api.get('/dashboard/property-distribution/'),
+};
+
+// Booking service
+export const bookingService = {
+  // Create a new booking
+  createBooking: (bookingData) => api.post('/bookings/', bookingData),
+  
+  // Get all bookings (for admin) or user's bookings
+  getBookings: (params = {}) => api.get('/bookings/', { params }),
+  
+  // Get a specific booking by ID
+  getBooking: (id) => api.get(`/bookings/${id}/`),
+  
+  // Update a booking
+  updateBooking: (id, bookingData) => api.put(`/bookings/${id}/`, bookingData),
+  
+  // Cancel a booking
+  cancelBooking: (id) => api.post(`/bookings/${id}/cancel/`),
+  
+  // Get bookings for a specific property (for property owners)
+  getPropertyBookings: (propertyId) => api.get(`/properties/${propertyId}/bookings/`),
+  
+  // Get user's bookings
+  getUserBookings: (userId) => api.get(`/users/${userId}/bookings/`),
 };
 
 export default api;

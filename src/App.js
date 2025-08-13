@@ -25,6 +25,7 @@ import Favorites from './components/buyer/Favorites';
 import SavedSearches from './components/buyer/SavedSearches';
 import Profile from './components/buyer/Profile';
 import Register from './components/auth/Register';
+import BookingsList from './components/bookings/BookingsList';
 import AdminLayout from './components/dashboard/Dashboard';
 import DashboardHome from './components/dashboard/DashboardHome';
 
@@ -81,6 +82,8 @@ function App() {
                   <Route path="inquiries" element={<Messages />} />
                   <Route path="analytics" element={<Reports />} />
                   <Route path="settings" element={<AccountManagement />} />
+                  <Route path="bookings" element={<BookingsList />} />
+                  <Route path="properties/:propertyId/bookings" element={<BookingsList propertyId=":propertyId" />} />
                 </Routes>
               </SellerLayout>
             </ProtectedRoute>
@@ -98,6 +101,7 @@ function App() {
             <Route path="favorites" element={<Favorites />} />
             <Route path="saved-searches" element={<SavedSearches />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="bookings" element={<BookingsList />} />
           </Route>
 
           {/* Catch-all redirects */}

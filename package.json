@@ -8,14 +8,15 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@heroicons/react": "^2.2.0",
-    "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/react-datepicker": "^4.19.0",
     "axios": "^1.10.0",
     "axios-mock-adapter": "^2.1.0",
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
     "react": "^18.2.0",
+    "react-datepicker": "^4.25.0",
     "react-dom": "^18.2.0",
     "react-loading-skeleton": "^3.5.0",
     "react-router-dom": "^6.20.0",
@@ -46,5 +47,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.4",
+    "identity-obj-proxy": "^3.0.0",
+    "jest-environment-jsdom": "^30.0.5"
   }
 }

@@ -57,7 +57,11 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
         ...prev,
         ...property,
         status: property.is_available ? 'available' : 'booked',
-        previewImage: property.images?.[0]?.image || null
+        previewImage: property.images?.[0]?.image || null,
+        // Ensure numeric fields are strings to prevent controlled input warnings
+        bedrooms: property.bedrooms?.toString() || '',
+        bathrooms: property.bathrooms?.toString() || '',
+        area: property.area?.toString() || ''
       }));
     }
   }, [property]);
@@ -76,9 +80,9 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: value 
+    setFormData(prev => ({
+      ...prev,
+      [name]: value === null ? '' : value // Ensure we never set null values
     }));
     setSubmitError('');
   };
@@ -123,6 +127,27 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
     }));
   };
 
+  const uploadImageToProperty = async (propertyId, imageFile) => {
+    if (!propertyId || !imageFile) return null;
+    
+    try {
+      const formDataImg = new FormData();
+      formDataImg.append('image', imageFile);
+      formDataImg.append('is_primary', 'true');
+      
+      console.log('Uploading image for property:', propertyId);
+      await propertyService.uploadPropertyImage(propertyId, formDataImg);
+      
+      // Refresh the property to get the updated image
+      const { data: updatedProperty } = await propertyService.getProperty(propertyId);
+      console.log('Image upload successful, updated property:', updatedProperty);
+      return updatedProperty;
+    } catch (uploadError) {
+      console.error('Image upload error:', uploadError);
+      throw new Error('Failed to upload property image');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
@@ -130,18 +155,25 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
     setIsSubmitting(true);
     
     try {
+      // Get current user from localStorage
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      if (!currentUser || !currentUser.id) {
+        throw new Error('User not authenticated');
+      }
+
       // Format the data to match backend expectations
       const propertyData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
         location: formData.location.trim(),
-        property_type: formData.property_type, // Already uppercase from the select
+        property_type: formData.property_type,
         is_available: formData.status === 'available',
         bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
         bathrooms: formData.bathrooms ? parseFloat(formData.bathrooms) : null,
         area: formData.area ? parseFloat(formData.area) : null,
         amenities: formData.amenities || [],
+        seller_id: currentUser.id,
       };
 
       console.log('Sending property data:', propertyData);
@@ -150,29 +182,44 @@ const PropertyForm = ({ onClose, onSubmit, property = null, isAdmin = false }) =
       if (property) {
         // Update existing property
         result = await propertyService.updateProperty(property.id, propertyData);
+        
+        // If there's a new image, upload it
+        if (formData.image) {
+          try {
+            const updatedProperty = await uploadImageToProperty(property.id, formData.image);
+            if (updatedProperty) {
+              result = updatedProperty;
+            }
+          } catch (error) {
+            // Log the error but don't fail the entire update
+            console.error('Error updating property image:', error);
+          }
+        }
       } else {
         // Create new property
         result = await propertyService.createProperty(propertyData);
-      }
-
-      // Handle image upload if there's a new image
-      if (formData.image) {
-        try {
-          const formDataImg = new FormData();
-          formDataImg.append('image', formData.image);
-          formDataImg.append('is_primary', 'true');
-          await propertyService.uploadPropertyImage(result.id, formDataImg);
-        } catch (uploadError) {
-          console.error('Image upload error:', uploadError);
-          // Continue even if image upload fails
+        
+        // Upload image for new property if one was selected
+        if (result?.id && formData.image) {
+          try {
+            const updatedProperty = await uploadImageToProperty(result.id, formData.image);
+            if (updatedProperty) {
+              result = updatedProperty;
+            }
+          } catch (error) {
+            console.error('Error uploading property image:', error);
+            // Continue with property creation even if image upload fails
+          }
         }
       }
 
-      // Call the parent's onSubmit with the complete property data
-      await onSubmit({
-        ...result,
-        image: formData.previewImage || property?.images?.[0]?.image
-      });
+      // Only call onSubmit if it's a function
+      if (typeof onSubmit === 'function') {
+        await onSubmit({
+          ...result,
+          image: formData.previewImage || property?.images?.[0]?.image
+        });
+      }
 
       toast.success(property ? 'Property updated successfully!' : 'Property created successfully!');
       setTimeout(() => onClose(), 1500);
