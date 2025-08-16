@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import './SellerDashboard.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faEye, faEnvelope, faClock, faDollarSign, faEdit, faInfoCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faEye, faEnvelope, faClock, faDollarSign, faEdit, faInfoCircle, faTrash, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { toast } from '../../ui/Toaster';
 import PropertyForm from '../../properties/PropertyForm';
 import PropertyDetails from '../../properties/PropertyDetails';
+import PropertyBookings from './PropertyBookings';
 import { useUser } from '../../../context/UserContext';
 
 const SellerDashboard = () => {
   const { user } = useUser();
+  const [activeTab, setActiveTab] = useState('properties'); // 'properties' or 'bookings'
+  
   // Load properties from localStorage, fallback to initialProperties
   const [properties, setProperties] = useState(() => {
     const saved = JSON.parse(localStorage.getItem('properties')) || [];
@@ -67,97 +70,137 @@ const SellerDashboard = () => {
 
   return (
     <div className="seller-dashboard-pro">
-      <div className="dashboard-stats-pro">
-        <div className="stat-card-pro glassy-pro gradient-pro">
-          <div className="stat-icon-pro stat-bg1"><FontAwesomeIcon icon={faHome} /></div>
-          <div>
-            <h3>Total Properties</h3>
-            <p className="stat-number-pro">{stats.totalProperties}</p>
-            <div className="stat-details-pro">
-              <span className="stat-label-pro">Active</span>
-              <span className="stat-value-pro">{properties.filter(p => p.status === 'Available').length}</span>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card-pro glassy-pro gradient-pro">
-          <div className="stat-icon-pro stat-bg2"><FontAwesomeIcon icon={faEye} /></div>
-          <div>
-            <h3>Total Views</h3>
-            <p className="stat-number-pro">{stats.totalViews}</p>
-            <div className="stat-details-pro">
-              <span className="stat-label-pro">This Month</span>
-              <span className="stat-value-pro">+15%</span>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card-pro glassy-pro gradient-pro">
-          <div className="stat-icon-pro stat-bg3"><FontAwesomeIcon icon={faEnvelope} /></div>
-          <div>
-            <h3>Inquiries</h3>
-            <p className="stat-number-pro">{stats.totalInquiries}</p>
-            <div className="stat-details-pro">
-              <span className="stat-label-pro">Pending</span>
-              <span className="stat-value-pro">{properties.filter(p => p.status === 'Pending').reduce((sum, p) => sum + (p.inquiries || 0), 0)}</span>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card-pro glassy-pro gradient-pro">
-          <div className="stat-icon-pro stat-bg4"><FontAwesomeIcon icon={faDollarSign} /></div>
-          <div>
-            <h3>Avg. Price</h3>
-            <p className="stat-number-pro">${stats.averagePrice.toLocaleString()}</p>
-            <div className="stat-details-pro">
-              <span className="stat-label-pro">Market Avg</span>
-              <span className="stat-value-pro">+5%</span>
-            </div>
-          </div>
+      {/* Tab Navigation */}
+      <div className="mb-8">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('properties')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'properties'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <FontAwesomeIcon icon={faHome} className="mr-2" />
+              My Properties
+            </button>
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'bookings'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
+              Property Bookings
+            </button>
+          </nav>
         </div>
       </div>
 
-      <div className="properties-grid-pro">
-        {properties.map((property) => (
-          <div key={property.id} className="property-card-pro glassy-pro">
-            <div className="property-avatar-pro">
-              <img src={property.image} alt={property.title} />
+      {/* Properties Tab */}
+      {activeTab === 'properties' && (
+        <>
+          <div className="dashboard-stats-pro">
+            <div className="stat-card-pro glassy-pro gradient-pro">
+              <div className="stat-icon-pro stat-bg1"><FontAwesomeIcon icon={faHome} /></div>
+              <div>
+                <h3>Total Properties</h3>
+                <p className="stat-number-pro">{stats.totalProperties}</p>
+                <div className="stat-details-pro">
+                  <span className="stat-label-pro">Active</span>
+                  <span className="stat-value-pro">{properties.filter(p => p.status === 'Available').length}</span>
+                </div>
+              </div>
             </div>
-            <div className="property-header-pro">
-              <h3>{property.title}</h3>
-              <span className={`status-badge-pro ${property.status.toLowerCase()}-pro`}>
-                {property.status}
-              </span>
+            <div className="stat-card-pro glassy-pro gradient-pro">
+              <div className="stat-icon-pro stat-bg2"><FontAwesomeIcon icon={faEye} /></div>
+              <div>
+                <h3>Total Views</h3>
+                <p className="stat-number-pro">{stats.totalViews}</p>
+                <div className="stat-details-pro">
+                  <span className="stat-label-pro">This Month</span>
+                  <span className="stat-value-pro">+15%</span>
+                </div>
+              </div>
             </div>
-            <div className="property-metrics-pro">
-              <div className="metric-pro"><FontAwesomeIcon icon={faEye} /> <span>{property.views} Views</span></div>
-              <div className="metric-pro"><FontAwesomeIcon icon={faEnvelope} /> <span>{property.inquiries} Inquiries</span></div>
-              <div className="metric-pro"><FontAwesomeIcon icon={faClock} /> <span>Updated {new Date(property.lastUpdated).toLocaleDateString()}</span></div>
+            <div className="stat-card-pro glassy-pro gradient-pro">
+              <div className="stat-icon-pro stat-bg3"><FontAwesomeIcon icon={faEnvelope} /></div>
+              <div>
+                <h3>Inquiries</h3>
+                <p className="stat-number-pro">{stats.totalInquiries}</p>
+                <div className="stat-details-pro">
+                  <span className="stat-label-pro">Pending</span>
+                  <span className="stat-value-pro">{properties.filter(p => p.status === 'Pending').reduce((sum, p) => sum + (p.inquiries || 0), 0)}</span>
+                </div>
+              </div>
             </div>
-            <div className="property-actions-pro">
-              <button className="edit-btn-pro" onClick={() => { setEditingProperty(property); setShowForm(true); }}>
-                <FontAwesomeIcon icon={faEdit} /> Edit
-              </button>
-              <button className="view-btn-pro" onClick={() => { setSelectedProperty(property); setShowDetails(true); }}>
-                <FontAwesomeIcon icon={faInfoCircle} /> View Details
-              </button>
-              <button className="delete-btn-pro" onClick={() => handleDeleteProperty(property.id)}>
-                <FontAwesomeIcon icon={faTrash} /> Delete
-              </button>
+            <div className="stat-card-pro glassy-pro gradient-pro">
+              <div className="stat-icon-pro stat-bg4"><FontAwesomeIcon icon={faDollarSign} /></div>
+              <div>
+                <h3>Avg. Price</h3>
+                <p className="stat-number-pro">${stats.averagePrice.toLocaleString()}</p>
+                <div className="stat-details-pro">
+                  <span className="stat-label-pro">Market Avg</span>
+                  <span className="stat-value-pro">+5%</span>
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
 
-      {showForm && (
-        <PropertyForm
-          onClose={() => { setShowForm(false); setEditingProperty(null); }}
-          onSubmit={handleSaveProperty}
-          property={editingProperty}
-        />
+          <div className="properties-grid-pro">
+            {properties.map((property) => (
+              <div key={property.id} className="property-card-pro glassy-pro">
+                <div className="property-avatar-pro">
+                  <img src={property.image} alt={property.title} />
+                </div>
+                <div className="property-header-pro">
+                  <h3>{property.title}</h3>
+                  <span className={`status-badge-pro ${property.status.toLowerCase()}-pro`}>
+                    {property.status}
+                  </span>
+                </div>
+                <div className="property-metrics-pro">
+                  <div className="metric-pro"><FontAwesomeIcon icon={faEye} /> <span>{property.views} Views</span></div>
+                  <div className="metric-pro"><FontAwesomeIcon icon={faEnvelope} /> <span>{property.inquiries} Inquiries</span></div>
+                  <div className="metric-pro"><FontAwesomeIcon icon={faClock} /> <span>Updated {new Date(property.lastUpdated).toISOString()}</span></div>
+                </div>
+                <div className="property-actions-pro">
+                  <button className="edit-btn-pro" onClick={() => { setEditingProperty(property); setShowForm(true); }}>
+                    <FontAwesomeIcon icon={faEdit} /> Edit
+                  </button>
+                  <button className="view-btn-pro" onClick={() => { setSelectedProperty(property); setShowDetails(true); }}>
+                    <FontAwesomeIcon icon={faInfoCircle} /> View Details
+                  </button>
+                  <button className="delete-btn-pro" onClick={() => handleDeleteProperty(property.id)}>
+                    <FontAwesomeIcon icon={faTrash} /> Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {showForm && (
+            <PropertyForm
+              onClose={() => { setShowForm(false); setEditingProperty(null); }}
+              onSubmit={handleSaveProperty}
+              property={editingProperty}
+            />
+          )}
+          {showDetails && selectedProperty && (
+            <PropertyDetails
+              property={selectedProperty}
+              onClose={() => { setShowDetails(false); setSelectedProperty(null); }}
+            />
+          )}
+        </>
       )}
-      {showDetails && selectedProperty && (
-        <PropertyDetails
-          property={selectedProperty}
-          onClose={() => { setShowDetails(false); setSelectedProperty(null); }}
-        />
+
+      {/* Bookings Tab */}
+      {activeTab === 'bookings' && (
+        <PropertyBookings />
       )}
     </div>
   );

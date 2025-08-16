@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { authService } from '../../services/api';
 import './Login.css';
 
 const Register = () => {
@@ -20,42 +21,79 @@ const Register = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    // Form validation
     if (!formData.role || !formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('Please fill in all fields');
       return;
     }
+    
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+    
+    // Password strength validation
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+    
     setLoading(true);
-    setTimeout(() => {
-      // Save new user to localStorage with a unique id
-      const newUser = {
-        id: Date.now(), // Unique user ID
+    
+    try {
+      // Prepare user data for registration
+      const userData = {
+        username: formData.email.split('@')[0], // Generate username from email
         email: formData.email,
         password: formData.password,
+        first_name: formData.name.split(' ')[0],
+        last_name: formData.name.split(' ').slice(1).join(' ') || formData.name.split(' ')[0],
         role: formData.role,
-        name: formData.name
       };
-      let registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-      // Prevent duplicate email registration
-      if (registeredUsers.some(u => u.email === newUser.email)) {
-        setLoading(false);
-        setError('An account with this email already exists.');
-        return;
-      }
-      registeredUsers.push(newUser);
-      localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-      setLoading(false);
-      setSuccess('Registration successful! You can now log in.');
+      
+      // Call the API to register the user
+      await authService.register(userData);
+      
+      // If we get here, registration was successful
+      setSuccess('Registration successful! Redirecting to login...');
       setFormData({ role: '', name: '', email: '', password: '', confirmPassword: '' });
-      setTimeout(() => navigate('/login'), 2000);
-    }, 1200);
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate('/login', { 
+          state: { 
+            registrationSuccess: true,
+            email: userData.email 
+          } 
+        });
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      // Handle specific error messages from the API
+      if (error.response) {
+        if (error.response.status === 400) {
+          // Handle validation errors
+          const errorData = error.response.data;
+          const errorMessage = Object.values(errorData)[0]?.[0] || 'Invalid registration data';
+          setError(errorMessage);
+        } else if (error.response.status === 409) {
+          setError('An account with this email already exists.');
+        } else {
+          setError('Registration failed. Please try again later.');
+        }
+      } else {
+        setError('Network error. Please check your connection and try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,6 +126,7 @@ const Register = () => {
                   required
                   placeholder="Enter your full name"
                   className={error && !formData.name ? 'error-input-pro' : ''}
+                  disabled={loading}
                 />
               </div>
               <div className="form-group-pro" style={{ flex: 1, marginLeft: '0.5rem' }}>
@@ -101,6 +140,7 @@ const Register = () => {
                   required
                   placeholder="Enter your email"
                   className={error && !formData.email ? 'error-input-pro' : ''}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -114,8 +154,9 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  placeholder="Create a password"
+                  placeholder="Create a password (min 8 characters)"
                   className={error && !formData.password ? 'error-input-pro' : ''}
+                  disabled={loading}
                 />
               </div>
               <div className="form-group-pro" style={{ flex: 1, marginLeft: '0.5rem' }}>
@@ -129,6 +170,7 @@ const Register = () => {
                   required
                   placeholder="Confirm your password"
                   className={error && !formData.confirmPassword ? 'error-input-pro' : ''}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -140,7 +182,8 @@ const Register = () => {
                 value={formData.role}
                 onChange={handleChange}
                 required
-                className={error && !formData.role ? 'error-input-pro' : ''}
+                className={`${error && !formData.role ? 'error-input-pro' : ''} ${loading ? 'disabled-select' : ''}`}
+                disabled={loading}
               >
                 <option value="">Select Role</option>
                 <option value="seller">Seller</option>
@@ -148,7 +191,12 @@ const Register = () => {
               </select>
             </div>
             <button type="submit" className="login-btn-pro" disabled={loading}>
-              {loading ? 'Registering...' : 'Register'}
+              {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Registering...
+              </>
+            ) : 'Register'}
             </button>
           </form>
           <div className="login-links-pro" style={{ marginTop: '1.5rem' }}>
